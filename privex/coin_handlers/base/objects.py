@@ -84,10 +84,10 @@ class Deposit(object):
 
     """
 
-    dict_keys = {'coin', 'tx_timestamp', 'amount', 'txid', 'vout', 'address'}
+    dict_keys = {'coin', 'tx_timestamp', 'amount', 'txid', 'vout', 'address', 'memo'}
 
     def __init__(self, coin: str, tx_timestamp: datetime, amount: Decimal, txid=None, vout: int = 0,
-                 address=None, **kwargs):
+                 address=None, memo=None, **kwargs):
         for k, v in kwargs.items():
             if not hasattr(self, k):
                 self.dict_keys.add(k)
@@ -100,6 +100,7 @@ class Deposit(object):
         self.txid = txid
         self.vout = vout
         self.address = address
+        self.memo = memo
 
     def __iter__(self):
         for k in self.dict_keys:
