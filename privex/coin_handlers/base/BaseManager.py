@@ -4,7 +4,7 @@ from decimal import Decimal
 from typing import Tuple, Union, Dict
 
 from privex.coin_handlers.base import exceptions
-from privex.coin_handlers.base import Coin
+from privex.coin_handlers.base.objects import Coin
 
 
 class BaseManager(ABC):
