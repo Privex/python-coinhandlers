@@ -54,7 +54,7 @@ class BaseManager(ABC):
         """The original unique database symbol ID"""
 
         self.allsettings =  {} if not settings else settings
-        super(BaseManager, self).__init__(settings=settings, coin=coin, *args, **kwargs)
+        # super(BaseManager, self).__init__(settings=settings, coin=coin, *args, **kwargs)
 
     def health(self) -> Tuple[str, tuple, tuple]:
         """

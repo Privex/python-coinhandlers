@@ -137,28 +137,29 @@ bm.get_deposit()
 
 ### Programmatic loading of handlers
 
-Using the example code in ``examples/load_on_demand.py`` it's possible to load handlers on-the-fly using
-user specified handler names.
+Using the coin handler helper functions in ``privex/coin_handlers/__init__.py`` it's possible to load handlers 
+on-the-fly using user specified handler names, and lookup the correct handler just using the coin symbol.
 
 
 ```python
-from examples import load_on_demand
+import privex.coin_handlers as ch
 from privex.coin_handlers import Coin
 
-# In the example code, there are two coin handlers enabled by default: Steem and Bitcoin
-print(load_on_demand.COIN_HANDLERS.keys())
+# In the example code, there are two coin handlers entered by default: Steem and Bitcoin
+print(ch.COIN_HANDLERS.keys())
 # dict_keys(['Bitcoin', 'Steem'])
 
 # Add Dogecoin to the coins handled by the ``Bitcoin`` coin handler.
-load_on_demand.COIN_HANDLERS['Bitcoin']['coins'].append(
-    Coin(setting_user='dogerpc', setting_pass='SecurePass', symbol='DOGE', symbol_id='DOGE')
-)
+ch.COIN_HANDLERS['Bitcoin']['coins'].append(Coin(symbol='DOGE', symbol_id='DOGE'))
+
+# Add connection settings for DOGE's handler instances
+ch.HANDLER_SETTINGS['COIND_RPC']['DOGE'] = dict(user='dogerpc', password='SomeSecret', port=22555)
 
 # Force reload the handlers
-load_on_demand.reload_handlers()
+ch.reload_handlers()
 
 # As we can see, if we pass the symbol DOGE to get_loader we get a BitcoinLoader object  
-doge = load_on_demand.get_loader('DOGE')
+doge = ch.get_loader('DOGE')
 # <privex.coin_handlers.Bitcoin.BitcoinLoader.BitcoinLoader object at 0x10ac0f160>
 
 # We cam also see in the loader object that our coin options were injected into the Loader settings, with the password

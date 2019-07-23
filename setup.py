@@ -42,7 +42,7 @@ with open("README.md", "r") as fh:
 setup(
     name='privex_coinhandlers',
 
-    version='1.0.2',
+    version='1.0.5',
 
     description='Various classes for handling sending/receiving cryptocurrencies',
     long_description=long_description,
