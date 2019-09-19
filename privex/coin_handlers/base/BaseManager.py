@@ -220,5 +220,10 @@ class BaseManager(ABC):
         except exceptions.NotEnoughBalance:
             return self.issue(amount=amount, address=address, memo=memo, trigger_data=trigger_data)
 
+    @abstractmethod
+    def __enter__(self):
+        return self
 
-
+    @abstractmethod
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        return self

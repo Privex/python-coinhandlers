@@ -257,3 +257,10 @@ class BitcoinManager(BaseManager, BitcoinMixin):
         except Exception as e:
             log.exception("Something went wrong sending %f %s to %s", amount, self.symbol, address)
             raise e
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+

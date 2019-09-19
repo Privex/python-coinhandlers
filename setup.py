@@ -35,6 +35,7 @@ otherwise to promote the sale, use or other dealings in this Software without pr
 """
 
 from setuptools import setup, find_packages
+from privex.coin_handlers import VERSION
 
 with open("README.md", "r") as fh:
     long_description = fh.read()
@@ -42,7 +43,7 @@ with open("README.md", "r") as fh:
 setup(
     name='privex_coinhandlers',
 
-    version='1.0.5',
+    version=VERSION,
 
     description='Various classes for handling sending/receiving cryptocurrencies',
     long_description=long_description,
@@ -54,7 +55,7 @@ setup(
     license='MIT',
     install_requires=[
         'requests>=2.20.1',
-        'privex-jsonrpc>=1.0.2',
+        'privex-jsonrpc>=1.1.2',
         'privex-helpers>=1.1.0',
         'python-dateutil',
         'pytz',
@@ -62,6 +63,8 @@ setup(
     packages=find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],

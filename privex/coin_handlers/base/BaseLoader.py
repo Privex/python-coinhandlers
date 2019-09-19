@@ -19,11 +19,11 @@ Copyright::
 import logging
 from abc import ABC, abstractmethod
 from typing import Generator, Dict, List
-from privex.coin_handlers.base.objects import Coin
+from privex.coin_handlers.base.objects import Coin, Deposit
+
+
 # from django.conf import settings
 # from payments.models import Coin
-
-
 
 
 class BaseLoader(ABC):
@@ -91,7 +91,7 @@ class BaseLoader(ABC):
         # super(BaseLoader, self).__init__(settings=settings, coins=coins)
 
     @abstractmethod
-    def list_txs(self, batch=100) -> Generator[dict, None, None]:
+    def list_txs(self, batch=100) -> Generator[Deposit, None, None]:
         """
         The list_txs function processes the transaction data from :meth:`.load`, as well as handling any
         pagination, if it's required (e.g. only retrieve `batch` transactions at a time from the data source)
@@ -127,7 +127,7 @@ class BaseLoader(ABC):
         :param int batch:   Amount of transactions to process/load per each batch
         :returns Generator: A generator returning dictionaries that can be imported into :class:`models.Deposit`
 
-        Dict format::
+        Deposit format::
 
           {txid:str, coin:str (symbol), vout:int, tx_timestamp:datetime,
            address:str, from_account:str, to_account:str, memo:str, amount:Decimal}
@@ -151,3 +151,12 @@ class BaseLoader(ABC):
         """
 
         raise NotImplemented("{}.load must be implemented!".format(type(self).__name__))
+
+    @abstractmethod
+    def __enter__(self):
+        return self
+
+    @abstractmethod
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+

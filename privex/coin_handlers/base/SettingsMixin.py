@@ -117,6 +117,7 @@ class SettingsMixin:
         settings = self.allsettings
         if self.use_coind_settings and 'COIND_RPC' in settings:
             for symbol, conn in settings['COIND_RPC'].items():
+                s[symbol] = {} if symbol not in s else s[symbol]
                 s[symbol] = {**s[symbol], **conn}
 
         # Finally, fill in any gaps with the default settings, and cast non-string settings to their correct type.
@@ -169,3 +170,4 @@ class SettingsMixin:
             # Cast settings keys to avoid casting errors
             self._cast_settings(z)
         return d_settings
+

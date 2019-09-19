@@ -75,10 +75,13 @@ from typing import Dict, List, Union, Any, Tuple
 from importlib import import_module
 from privex.helpers import is_false
 from privex.coin_handlers.base import BaseLoader, BaseManager, BatchLoader, Coin, Deposit, decorators, \
-                                      exceptions, retry_on_err, SettingsMixin
+    exceptions, retry_on_err, SettingsMixin
 from privex.coin_handlers.Bitcoin import BitcoinLoader, BitcoinManager, BitcoinMixin
+from privex.coin_handlers.Monero import MoneroLoader, MoneroManager, MoneroMixin
+
 name = 'coin_handlers'
 
+VERSION = '1.1.0'
 
 # If the privex.coin_handlers logger has no handlers, assume it hasn't been configured and set up a console logger
 # for any logs >=WARNING
@@ -126,6 +129,8 @@ HANDLER_SETTINGS = {
 """
 The ``HANDLER_SETTINGS`` dictionary is passed to all handler Loader's and Manager's as the first argument.
 
+It's recommended to use :py:func:`.configure_coin` instead of manipulating this by hand.
+
 Generally it should be a dictionary containing ``COIND_RPC`` , which then contains keys for each coin symbol, mapped
 to a dict with settings for that coin.
 
@@ -140,10 +145,17 @@ Example::
 
 """
 
+COIN_MAP = {
+    'STEEM': Coin(symbol='STEEM', symbol_id='STEEM'),
+    'SBD': Coin(symbol='SBD', symbol_id='SBD'),
+    'BTC': Coin(symbol='BTC', symbol_id='BTC'),
+    'XMR': Coin(symbol='XMR', symbol_id='XMR'),
+}
+
 
 COIN_HANDLERS = {
     'Bitcoin': {
-        'enabled': True,  # Defaults to True if not specified. If False, will nopt a
+        'enabled': False,
         'coins': [        # A list of :class:`base.objects.Coin` instances that this handler is responsible for.
             # Coin(setting_user='bitcoinrpc', setting_pass='SomeSecurePass', symbol='BTC', symbol_id='BTC'),
         ],
@@ -152,9 +164,16 @@ COIN_HANDLERS = {
     'Steem': {
         'enabled': False,
         'coins': [
-            Coin(symbol='STEEM', symbol_id='STEEM'),
-            Coin(symbol='SBD', symbol_id='SBD'),
-        ]
+            COIN_MAP['STEEM'], COIN_MAP['SBD'],
+        ],
+        'kwargs': {}
+    },
+    'Monero': {
+        'enabled': False,
+        'coins': [
+            COIN_MAP['XMR'],
+        ],
+        'kwargs': {}
     }
 }   # type: Dict[str, Dict[str, Any]]
 """
@@ -181,6 +200,122 @@ Example for :py:mod:`.Bitcoin` :
 """
 
 log = logging.getLogger(__name__)
+
+
+def _handler(handler: str) -> dict:
+    """
+    Returns a handler config from ``COIN_HANDLERS``.
+
+    Automatically creates non-existent handler keys, as well as ensuring that the ``coins`` sub-key exists.
+    """
+    if handler not in COIN_HANDLERS:
+        COIN_HANDLERS[handler] = dict(enabled=True, coins=[])
+    ch = COIN_HANDLERS[handler]
+    if 'coins' not in ch:
+        ch['coins'] = []
+    return ch
+
+
+def disable_handler(*handler: str):
+    """
+    Disable one or more Coin Handlers with given names (CASE SenSITiVE)
+    """
+    for h in handler:
+        if h in COIN_HANDLERS:
+            COIN_HANDLERS[h]['enabled'] = False
+
+
+def enable_handler(*handler: str):
+    """
+    Enable one or more Coin Handlers with given names (CASE SenSITiVE)
+
+    :raises exceptions.HandlerNotFound: When a given handler name doesn't exist.
+    """
+    for h in handler:
+        if h not in COIN_HANDLERS:
+            raise exceptions.HandlerNotFound(f"The handler '{h}' does not exist! Cannot enable it.")
+        COIN_HANDLERS[h]['enabled'] = True
+
+
+
+def configure_coin(symbol: str, **config_opts):
+    """
+    Set configuration options for a given coin symbol - only overwrites the specific keys passed, so can be
+    called multiple times for a coin.
+
+    If the coin doesn't exist in ``HANDLER_SETTINGS['COIND_RPC']`` then it will be created.
+
+    Example:
+
+        >>> configure_coin('BTC', host='127.0.0.1', user='bitcoinrpc', password='mypassword')
+        >>> configure_coin('BTC', confirms_needed=1)
+
+
+    :param str symbol: The coin symbol to configure, e.g. ``BTC``
+    :param Any config_opts: Keyword args for each setting you want to adjust
+    :return dict coin_settings: A ``dict`` containing the current settings for the coin
+    """
+    symbol = symbol.upper()
+
+    c_rpc = HANDLER_SETTINGS['COIND_RPC']
+    if symbol not in c_rpc:
+        c_rpc[symbol] = {}
+    c_rpc[symbol] = {**c_rpc[symbol], **config_opts}
+    return c_rpc[symbol]
+
+
+def configure_handler(handler: str, **config_opts):
+    """
+    Set configuration options on a handler
+
+    Example:
+
+        >>> configure_handler('Steem', enabled=True, coins=[], kwargs=dict(some='extra_kwargs'))
+
+
+    :param str handler: A handler name as a string, e.g. ``Bitcoin``
+    :param config_opts: Configuration options to set, as keyword args
+    """
+    COIN_HANDLERS[handler] = {**COIN_HANDLERS[handler], **config_opts}
+
+
+def handler_has_coin(handler: str, symbol: str) -> bool:
+    """Returns ``True`` if the given ``symbol`` is in a handler's coin list"""
+    chc = _handler(handler)['coins']
+    for coin in chc:
+        if coin.symbol.upper() == symbol.upper():
+            return True
+    return False
+
+
+def add_handler_coin(handler: str, coin: Union[Coin, str]):
+    """
+    Add a :class:`.Coin` to a handler's enabled coin list if it's not already there.
+
+    Example:
+
+        >>> add_handler_coin('Bitcoin', Coin(symbol='DOGE', symbol_id='DOGE'))
+        >>> # Or if the coin exists in the COIN_MAP
+        >>> add_handler_coin('Bitcoin', 'BTC')
+
+    :param str handler:   The name of a handler, e.g. ``Bitcoin``
+    :param Coin|str coin: Either a :class:`.Coin` object, or a string symbol which exists in :py:attr:`.COIN_MAP`
+    :return:
+    """
+    if type(coin) is str:
+        coin = coin.upper()
+        if coin not in COIN_MAP:
+            raise exceptions.TokenNotFound(f'Requested symbol "{coin}" not found in COIN_MAP')
+        coin = COIN_MAP[coin]
+    sym = coin.symbol
+    if handler_has_coin(handler, sym):
+        return False
+
+    ch = _handler(handler)
+    ch['coins'].append(coin)
+    if coin.symbol not in COIN_MAP:
+        COIN_MAP[coin.symbol] = coin
+    return True
 
 
 def get_loaders(symbol: str = None) -> Union[Tuple[str, List[BaseLoader]], List[BaseLoader]]:
@@ -248,6 +383,13 @@ def get_loader(symbol: str) -> BaseLoader:
 
 
 def add_handler(handler, handler_name, handler_type):
+    """
+    Internal function. Used by :py:func:`.reload_handlers` to initialise handlers for usage.
+
+    :param handler: An un-instantiated handler class based on :class:`.BaseLoader` / :class:`.BaseManager`
+    :param str handler_name: The unique name of the handler, e.g. ``Bitcoin``
+    :param str handler_type: The type of handler class it is, either ``managers`` or ``loaders``
+    """
     global handlers
     # `handler` is an un-instantiated class extending BaseLoader / BaseManager
     for coin in COIN_HANDLERS[handler_name]['coins']:
@@ -290,6 +432,9 @@ def reload_handlers():
                 log.debug('Adding manager class for %s', ch)
                 add_handler(ex['manager'], ch, 'managers')
         except:
+            log.debug('COIN_HANDLERS %s', COIN_HANDLERS)
+            log.debug('COIN_MAP %s', COIN_MAP)
+            log.debug('HANDLER_SETTINGS %s', HANDLER_SETTINGS)
             log.exception("Something went wrong loading the handler %s", ch)
             log.error("Skipping this handler...")
 

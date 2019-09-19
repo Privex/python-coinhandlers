@@ -1,3 +1,8 @@
+[![PyPi Version](https://img.shields.io/pypi/v/privex-coinhandlers.svg)](https://pypi.org/project/privex-coinhandlers/)
+![License Button](https://img.shields.io/pypi/l/privex-coinhandlers) ![PyPI - Downloads](https://img.shields.io/pypi/dm/privex-coinhandlers)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/privex-coinhandlers) 
+![GitHub last commit](https://img.shields.io/github/last-commit/Privex/python-coinhandlers)
+
 # Privex's Python Coin Handlers
 
 Work-in-progress. Coin handlers were originally written for one of our open source projects:
@@ -49,6 +54,41 @@ Here's the important bits:
 
 
 # Example usage:
+
+### Note on Context Managers
+
+As of Version 1.1.0 - context management was added to some coin handlers, as well as dummy context
+management for handlers that don't need it.
+
+It's recommended to use context management (`with` statements) when using a loader/manager
+to ensure connections, database sessions etc. are opened and closed cleanly.
+
+```python
+from privex.coin_handlers import MoneroLoader, get_loader, Coin
+
+###
+# Context management when using on-the-fly programmatic loading
+###
+
+with get_loader('XMR') as m:
+    m.load()
+    txs = m.list_txs()
+
+###
+# Context management when directly using loader/manager classes
+###
+
+settings = dict(
+    COIND_RPC=dict(XMR=dict(user='monero', password='SomeRPCPassword', port=18100))
+)
+
+xmrcoin = Coin(symbol='XMR', symbol_id='XMR')
+
+with MoneroLoader(settings=settings, coins=[xmrcoin]) as m:
+    m.load()
+    txs = m.list_txs()
+
+```
 
 ### Using a loader/manager directly
 
@@ -145,15 +185,32 @@ on-the-fly using user specified handler names, and lookup the correct handler ju
 import privex.coin_handlers as ch
 from privex.coin_handlers import Coin
 
-# In the example code, there are two coin handlers entered by default: Steem and Bitcoin
+# In the example code, there are three coin handlers entered by default: Steem, Monero and Bitcoin
 print(ch.COIN_HANDLERS.keys())
-# dict_keys(['Bitcoin', 'Steem'])
+# dict_keys(['Bitcoin', 'Steem', 'Monero'])
+
+# To ensure the coin handlers you want to use, are actually loaded, you should call enable_handler
+# It won't hurt if they're already enabled.
+ch.enable_handler('Bitcoin', 'Monero')
 
 # Add Dogecoin to the coins handled by the ``Bitcoin`` coin handler.
-ch.COIN_HANDLERS['Bitcoin']['coins'].append(Coin(symbol='DOGE', symbol_id='DOGE'))
+ch.add_handler_coin('Bitcoin', Coin(symbol='DOGE', symbol_id='DOGE'))
 
 # Add connection settings for DOGE's handler instances
-ch.HANDLER_SETTINGS['COIND_RPC']['DOGE'] = dict(user='dogerpc', password='SomeSecret', port=22555)
+ch.configure_coin('DOGE', user='dogerpc', password='SomeSecret', port=22555)
+
+# Some handlers such as Monero come with their native coin pre-added. You can check if a handler has
+# a certain coin with `handler_has_coin`
+ch.handler_has_coin('Monero', 'XMR')
+# True
+
+# Add connection and wallet configuration settings for Monero (XMR)
+# wallet = Monero wallet filename, walletpass = Wallet encryption password, account = Wallet account
+ch.configure_coin(
+    'XMR',
+    user='monero', password='SomeRPCPassword', port=18100, confirms_needed=0,
+    wallet='mnrwallet', walletpass='SomeWalletPassword', account='mywalletaccount'
+)
 
 # Force reload the handlers
 ch.reload_handlers()
@@ -243,7 +300,7 @@ pip3 install git+https://github.com/Privex/python-coinhandlers
 ```bash
 # Clone the repository from Github
 git clone https://github.com/Privex/python-coinhandlers
-cd python-jsonrpc
+cd python-coinhandlers
 
 # RECOMMENDED MANUAL INSTALL METHOD
 # Use pip to install the source code

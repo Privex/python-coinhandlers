@@ -3,6 +3,11 @@ class CoinHandlerException(Exception):
     pass
 
 
+class HandlerNotFound(CoinHandlerException):
+    """A requested handler does not exist"""
+    pass
+
+
 class TokenNotFound(CoinHandlerException):
     """The token/coin requested doesn't exist"""
     pass
