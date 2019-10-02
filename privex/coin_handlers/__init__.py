@@ -76,12 +76,19 @@ from importlib import import_module
 from privex.helpers import is_false
 from privex.coin_handlers.base import BaseLoader, BaseManager, BatchLoader, Coin, Deposit, decorators, \
     exceptions, retry_on_err, SettingsMixin
+from privex.coin_handlers.KeyStore import KeyStore, KeyPair, MemoryKeyStore, get_key_store, set_key_store
+
+try:
+    from privex.coin_handlers.KeyStore import DjangoKeyStore
+except ImportError:
+    pass
+
 from privex.coin_handlers.Bitcoin import BitcoinLoader, BitcoinManager, BitcoinMixin
 from privex.coin_handlers.Monero import MoneroLoader, MoneroManager, MoneroMixin
 
 name = 'coin_handlers'
 
-VERSION = '1.1.0'
+VERSION = '1.2.0'
 
 # If the privex.coin_handlers logger has no handlers, assume it hasn't been configured and set up a console logger
 # for any logs >=WARNING
@@ -150,6 +157,8 @@ COIN_MAP = {
     'SBD': Coin(symbol='SBD', symbol_id='SBD'),
     'BTC': Coin(symbol='BTC', symbol_id='BTC'),
     'XMR': Coin(symbol='XMR', symbol_id='XMR'),
+    'GOLOS': Coin(symbol='GOLOS', symbol_id='GOLOS'),
+    'GBG': Coin(symbol='GBG', symbol_id='GBG'),
 }
 
 
@@ -174,6 +183,14 @@ COIN_HANDLERS = {
             COIN_MAP['XMR'],
         ],
         'kwargs': {}
+    },
+    'Golos': {
+        'enabled': False,
+        'coins':   [
+            COIN_MAP['GOLOS'],
+            COIN_MAP['GBG'],
+        ],
+        'kwargs':  {}
     }
 }   # type: Dict[str, Dict[str, Any]]
 """
@@ -237,7 +254,6 @@ def enable_handler(*handler: str):
         COIN_HANDLERS[h]['enabled'] = True
 
 
-
 def configure_coin(symbol: str, **config_opts):
     """
     Set configuration options for a given coin symbol - only overwrites the specific keys passed, so can be
@@ -261,6 +277,12 @@ def configure_coin(symbol: str, **config_opts):
     if symbol not in c_rpc:
         c_rpc[symbol] = {}
     c_rpc[symbol] = {**c_rpc[symbol], **config_opts}
+    
+    if symbol in COIN_MAP:
+        for k, v in config_opts.items():
+            if hasattr(COIN_MAP[symbol], k):
+                setattr(COIN_MAP[symbol], k, v)
+    
     return c_rpc[symbol]
 
 

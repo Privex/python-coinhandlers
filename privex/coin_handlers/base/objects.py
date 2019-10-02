@@ -28,6 +28,18 @@ class Coin(object):
         'symbol', 'symbol_id', 'coin_type', 'our_account', 'can_issue',
         'setting_host', 'setting_port', 'setting_user', 'setting_pass', 'setting_json'
     ]
+    
+    symbol: str
+    symbol_id: str
+    coin_type: str
+    our_account: str
+    can_issue: str
+    
+    setting_host: str
+    setting_port: int
+    setting_user: int
+    setting_pass: int
+    setting_json: str
 
     def __init__(self, *args, **kwargs):
         base_keys = self.base_keys
@@ -86,8 +98,18 @@ class Deposit(object):
 
     dict_keys = {'coin', 'tx_timestamp', 'amount', 'txid', 'vout', 'address', 'memo'}
 
+    address: str
+    from_account: str
+    to_account: str
+    memo: str
+    coin: str
+    tx_timestamp: datetime
+    amount: Decimal
+    txid: str
+    vout: int
+    
     def __init__(self, coin: str, tx_timestamp: datetime, amount: Decimal, txid=None, vout: int = 0,
-                 address=None, memo=None, **kwargs):
+                 address=None, memo=None, from_account=None, to_account=None, **kwargs):
         for k, v in kwargs.items():
             if not hasattr(self, k):
                 self.dict_keys.add(k)
@@ -97,10 +119,8 @@ class Deposit(object):
         if type(amount) is not Decimal:
             amount = Decimal(amount)
         self.amount = amount
-        self.txid = txid
-        self.vout = vout
-        self.address = address
-        self.memo = memo
+        self.txid, self.vout, self.memo = txid, vout, memo
+        self.address, self.from_account, self.to_account = address, from_account, to_account
 
     def __iter__(self):
         for k in self.dict_keys:

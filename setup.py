@@ -56,7 +56,8 @@ setup(
     install_requires=[
         'requests>=2.20.1',
         'privex-jsonrpc>=1.1.2',
-        'privex-helpers>=1.1.0',
+        'privex-helpers>=1.3.0',
+        'golos-python>=1.0.2',
         'python-dateutil',
         'pytz',
     ],

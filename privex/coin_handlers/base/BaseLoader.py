@@ -52,8 +52,14 @@ class BaseLoader(ABC):
 
     # A list of token/coin symbols in uppercase that this loader supports e.g.
     # provides = ["LTC", "BTC", "BCH"]
-    provides = []
+    provides: List[str] = []
 
+    coins: Dict[str, Coin]
+    orig_coins: Dict[str, Coin]
+    symbols: List[str]
+    orig_symbols: List[str]
+    transactions: list
+    
     def __init__(self, settings: Dict[str, dict] = None, coins: List[Coin] = None, *args, **kwargs):
         """
         When a transaction loader is initialised, it receives purely the coin that it should be importing transactions
