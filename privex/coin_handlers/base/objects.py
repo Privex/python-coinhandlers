@@ -26,7 +26,8 @@ class Coin(object):
     """
     base_keys = [
         'symbol', 'symbol_id', 'coin_type', 'our_account', 'can_issue',
-        'setting_host', 'setting_port', 'setting_user', 'setting_pass', 'setting_json'
+        'setting_host', 'setting_port', 'setting_user', 'setting_pass', 'setting_json',
+        'display_name',
     ]
     
     symbol: str
@@ -34,6 +35,7 @@ class Coin(object):
     coin_type: str
     our_account: str
     can_issue: str
+    display_name: str
     
     setting_host: str
     setting_port: int

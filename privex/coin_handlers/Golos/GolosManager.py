@@ -1,5 +1,5 @@
 from decimal import Decimal, ROUND_DOWN
-from typing import Union, Dict, List
+from typing import Union, Dict, List, Tuple
 
 from golos import Api
 from privex.coin_handlers.base.objects import Coin
@@ -25,6 +25,62 @@ class GolosManager(BaseManager, GolosMixin):
 
     def address_valid(self, address) -> bool:
         return len(self.rpc.get_accounts([address])) > 0
+
+    def health(self) -> Tuple[str, tuple, tuple]:
+        """
+        Return health data for the passed symbol.
+
+        Health data will include: 'Symbol', 'Status', 'Coin Name', 'API Node', 'Head Block', 'Block Time',
+        'RPC Version', 'Our Account', 'Our Balance' (all strings)
+
+        :return tuple health_data: (manager_name:str, headings:list/tuple, health_data:list/tuple,)
+        """
+        headers = ('Symbol', 'Status', 'Coin Name', 'API Node', 'Head Block', 'Block Time', 'RPC Version',
+                   'Our Account', 'Our Balance')
+    
+        class_name = type(self).__name__
+        api_node = asset_name = head_block = block_time = rpc_ver = our_account = balance = ''
+    
+        status = 'Okay'
+        try:
+            rpc = self.rpc
+            our_account = self.coin.our_account
+            if not self.address_valid(our_account):
+                status = 'Account {} not found'.format(our_account)
+        
+            asset_name = self.coin.display_name
+            balance = ('{0:,.' + str(self.precision) + 'f}').format(self.balance(our_account))
+            api_node = rpc.rpc.url
+            props = rpc.get_dynamic_global_properties()
+            head_block = str(props.get('head_block_number', ''))
+            block_time = props.get('time', '')
+            rpc_ver = rpc.get_config()['STEEMIT_BLOCKCHAIN_VERSION']
+        except:
+            status = 'ERROR'
+            log.exception('Exception during %s.health for symbol %s', class_name, self.symbol)
+    
+        if status == 'Okay':
+            status = '<b style="color: green">{}</b>'.format(status)
+        else:
+            status = '<b style="color: red">{}</b>'.format(status)
+    
+        data = (self.symbol, status, asset_name, api_node, head_block, block_time, rpc_ver, our_account, balance)
+        return class_name, headers, data
+
+    def health_test(self) -> bool:
+        """
+        Check if our Golos node works or not, by requesting basic information such as the current block + time, and
+        checking if our sending/receiving account exists on Golos.
+
+        :return bool: True if Golos appears to be working, False if it seems to be broken.
+        """
+        try:
+            _, _, health_data = self.health()
+            if 'Okay' in health_data[1]:
+                return True
+            return False
+        except:
+            return False
 
     def get_deposit(self) -> tuple:
         """
