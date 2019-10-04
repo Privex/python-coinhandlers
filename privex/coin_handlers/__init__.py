@@ -82,7 +82,7 @@ from privex.coin_handlers.Monero import MoneroLoader, MoneroManager, MoneroMixin
 
 name = 'coin_handlers'
 
-VERSION = '1.2.4'
+VERSION = '1.2.5'
 
 # If the privex.coin_handlers logger has no handlers, assume it hasn't been configured and set up a console logger
 # for any logs >=WARNING

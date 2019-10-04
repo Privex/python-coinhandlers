@@ -35,6 +35,9 @@ class DictLike(object):
             return getattr(self, key)
         raise KeyError(key)
 
+    def __setitem__(self, key, value):
+        return setattr(self, key, value)
+
 
 class Coin(DictLike):
     """
