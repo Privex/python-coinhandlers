@@ -77,18 +77,12 @@ from privex.helpers import is_false
 from privex.coin_handlers.base import BaseLoader, BaseManager, BatchLoader, Coin, Deposit, decorators, \
     exceptions, retry_on_err, SettingsMixin
 from privex.coin_handlers.KeyStore import KeyStore, KeyPair, MemoryKeyStore, get_key_store, set_key_store
-
-try:
-    from privex.coin_handlers.KeyStore import DjangoKeyStore
-except ImportError:
-    pass
-
 from privex.coin_handlers.Bitcoin import BitcoinLoader, BitcoinManager, BitcoinMixin
 from privex.coin_handlers.Monero import MoneroLoader, MoneroManager, MoneroMixin
 
 name = 'coin_handlers'
 
-VERSION = '1.2.1'
+VERSION = '1.2.2'
 
 # If the privex.coin_handlers logger has no handlers, assume it hasn't been configured and set up a console logger
 # for any logs >=WARNING
@@ -99,6 +93,11 @@ if len(_l.handlers) == 0:
     _handler.setLevel(logging.WARNING)
     _l.setLevel(logging.WARNING)
     _l.addHandler(_handler)
+
+try:
+    from privex.coin_handlers.KeyStore import DjangoKeyStore
+except ImportError as e:
+    log.debug('privex.coin_handlers __init__ failed to import DjangoKeyStore: %s', str(e))
 
 
 handlers = {}    # type: Dict[ str, Dict[str, List[Union[BaseLoader, BaseManager]] ] ]

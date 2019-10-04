@@ -34,12 +34,15 @@ passing an already instantiated class to ``set_key_store``.
     >>> set_key_store(MyStore())
 
 """
+import logging
+
 from abc import ABC, abstractmethod
 from decimal import Decimal
-from typing import List, Optional
+from typing import List, Optional, Type
 
 from privex.helpers import is_true
 
+log = logging.getLogger(__name__)
 
 __STORE = {}
 
@@ -130,12 +133,12 @@ class MemoryKeyStore(KeyStore):
 
 try:
     from django.db import models
-    from privex.helpers import model_to_dict
+    from privex.helpers.django import model_to_dict
     
     class DjangoKeyStore(KeyStore):
-        model: models.Model
+        model: Type[models.Model]
         
-        def __init__(self, model: models.Model):
+        def __init__(self, model: Type[models.Model]):
             self.model = model
         
         def get(self, **kwargs) -> Optional[KeyPair]:
@@ -143,10 +146,9 @@ try:
             if len(obj) < 1:
                 return None
             return KeyPair(**model_to_dict(obj[0]))
-            
 
-except ImportError:
-    pass
+except ImportError as e:
+    log.debug('privex.coin_handlers.KeyStore failed to initialise DjangoKeyStore: %s', str(e))
         
 
 def get_key_store() -> KeyStore:
