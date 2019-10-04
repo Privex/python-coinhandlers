@@ -29,11 +29,12 @@ class GolosLoader(BaseLoader, GolosMixin):
         log.debug('Symbols: %s', self.symbols)
         for s in self.symbols:
             rpc = self.get_rpc(s)
-            txs = rpc.get_account_history(self.coins[s].our_account)
+            our_account = self.coins[s].our_account
+            txs = rpc.get_account_history(our_account)
             log.debug('Looping over %s txs', s)
             for tx in txs:
                 try:
-                    cleaned = self._clean_tx(tx=tx, symbol=s)
+                    cleaned = self._clean_tx(tx=tx, symbol=s, account=our_account)
                 
                     if cleaned is None:
                         continue
@@ -62,7 +63,7 @@ class GolosLoader(BaseLoader, GolosMixin):
     def __exit__(self, exc_type, exc_val, exc_tb):
         pass
 
-    def _clean_tx(self, tx: dict, symbol) -> Optional[dict]:
+    def _clean_tx(self, tx: dict, symbol, account: str = None, memo: str = None) -> Optional[dict]:
         """Filters an individual transaction dictionary"""
         
         if tx.get('type_op') != 'transfer':
@@ -70,9 +71,13 @@ class GolosLoader(BaseLoader, GolosMixin):
         
         res = {
             'coin': self.coins[symbol].symbol, 'from_account': tx.get('from'), 'to_account': tx.get('to'),
-            'vout': int(0), 'txid': tx['trx_id'], 'memo': tx.get('memo', ''),
+            'vout': int(0), 'txid': tx['trx_id'], 'memo': tx.get('memo', '').strip(),
         }
-
+        if account is not None and (res['to_account'] != account or res['from_account'] == account):
+            return None  # If the transaction isn't to us (account), or it's from ourselves, ignore it.
+        if memo is not None and res['memo'] != memo.strip():
+            return None
+            
         amt, sym = tx['amount'].split(' ')
         if sym.upper() != symbol.upper():
             log.debug(f'Skipping TX as symbol was {sym.upper()} (expected {symbol.upper()})')
