@@ -2,13 +2,41 @@ import json
 import logging
 from datetime import datetime
 from decimal import Decimal
+from typing import List
 
 from privex.helpers import is_true
 
 log = logging.getLogger(__name__)
 
 
-class Coin(object):
+class DictLike(object):
+    """
+    Allows child classes to work like ``dict``'s
+    """
+    dict_keys: List[str]
+    
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+    
+    def __iter__(self):
+        """Handle casting via ``dict(myclass)``"""
+        for k in self.dict_keys:
+            yield (k, getattr(self, k),)
+    
+    def __getitem__(self, key):
+        """
+        When the instance is accessed like a dict, try returning the matching attribute.
+        If the attribute doesn't exist, or the key is an integer, try and pull it from raw_data
+        """
+        if hasattr(self, key):
+            return getattr(self, key)
+        raise KeyError(key)
+
+
+class Coin(DictLike):
     """
     :ivar str symbol:        Unique symbol ID used by implementing application
     :ivar str symbol_id:     Native symbol used on the network where this Coin object is being passed to
@@ -56,17 +84,6 @@ class Coin(object):
                 setattr(self, k, v)
         self.raw_data = kwargs
 
-    def __iter__(self):
-        for k in self.dict_keys: yield (k, getattr(self, k),)
-
-    def __getitem__(self, key):
-        """
-        When the instance is accessed like a dict, try returning the matching attribute.
-        If the attribute doesn't exist, or the key is an integer, try and pull it from raw_data
-        """
-        if hasattr(self, key): return getattr(self, key)
-        raise KeyError(key)
-
     def __repr__(self):
         return str(dict(self))
 
@@ -93,9 +110,9 @@ class Coin(object):
         )
 
 
-class Deposit(object):
+class Deposit(DictLike):
     """
-
+    Represents a generic Deposit on any coin
     """
 
     dict_keys = {'coin', 'tx_timestamp', 'amount', 'txid', 'vout', 'address', 'memo'}
@@ -123,19 +140,6 @@ class Deposit(object):
         self.amount = amount
         self.txid, self.vout, self.memo = txid, vout, memo
         self.address, self.from_account, self.to_account = address, from_account, to_account
-
-    def __iter__(self):
-        for k in self.dict_keys:
-            yield (k, getattr(self, k),)
-
-    def __getitem__(self, key):
-        """
-        When the instance is accessed like a dict, try returning the matching attribute.
-        If the attribute doesn't exist, or the key is an integer, try and pull it from raw_data
-        """
-        if hasattr(self, key):
-            return getattr(self, key)
-        raise KeyError(key)
 
     def __repr__(self):
         return f"<Deposit coin='{self.coin}' amount='{self.amount}' address='{self.address}'>"
