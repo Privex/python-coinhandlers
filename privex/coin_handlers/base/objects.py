@@ -118,7 +118,7 @@ class Deposit(DictLike):
     Represents a generic Deposit on any coin
     """
 
-    dict_keys = {'coin', 'tx_timestamp', 'amount', 'txid', 'vout', 'address', 'memo'}
+    dict_keys = {'coin', 'tx_timestamp', 'amount', 'txid', 'vout', 'address', 'memo', 'from_account', 'to_account'}
 
     address: str
     from_account: str
