@@ -41,7 +41,7 @@ class GolosManager(BaseManager, GolosMixin):
         if not self.address_valid(address):
             raise exceptions.AccountNotFound(f'Account "{address}" does not exist.')
         
-        acc = self.rpc.get_accounts([address])[0]
+        acc = self.rpc.get_balances(address)[address]
         return Decimal(acc[self.symbol.upper()])
     
     def send(self, amount: Decimal, address: str, from_address: str = None, memo: str = None,

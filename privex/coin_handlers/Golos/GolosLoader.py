@@ -70,7 +70,7 @@ class GolosLoader(BaseLoader, GolosMixin):
         
         res = {
             'coin': self.coins[symbol].symbol, 'from_account': tx.get('from'), 'to_account': tx.get('to'),
-            'vout': int(0),
+            'vout': int(0), 'txid': tx['trx_id'], 'memo': tx.get('memo', ''),
         }
 
         amt, sym = tx['amount'].split(' ')
@@ -78,17 +78,7 @@ class GolosLoader(BaseLoader, GolosMixin):
             log.debug(f'Skipping TX as symbol was {sym.upper()} (expected {symbol.upper()})')
             return
         res['amount'] = Decimal(amt)
-        res['memo'] = tx.get('memo', '')
         res['tx_timestamp'] = pytz.utc.localize(parse(tx['timestamp']))
-        try:
-            rpc = self.get_rpc(symbol)
-            bc_tx = rpc.find_op_transaction(tx)
-            if 'transaction_id' in bc_tx:
-                res['txid'] = bc_tx['transaction_id']
-            else:
-                res['txid'] = rpc.get_transaction_id(bc_tx)
-        except TransactionNotFound:
-            res['txid'] = None
         
         return res
         
