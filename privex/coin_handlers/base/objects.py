@@ -1,12 +1,22 @@
 import json
+import attr
 import logging
 from datetime import datetime
 from decimal import Decimal
 from typing import List
 
+from dateutil.parser import parse
 from privex.helpers import is_true
 
 log = logging.getLogger(__name__)
+
+
+def convert_datetime(d):
+    if type(d) in [str, int]:
+        d = parse(d)
+    if type(d) is not datetime:
+        raise ValueError('Timestamp must be either a datetime object, or an ISO8601 string...')
+    return d
 
 
 class DictLike(object):
@@ -39,7 +49,34 @@ class DictLike(object):
         return setattr(self, key, value)
 
 
-class Coin(DictLike):
+@attr.s
+class AttribDictable:
+    def get(self, key, default=None):
+        try:
+            return self[key]
+        except KeyError:
+            return default
+    
+    def __iter__(self):
+        """Handle casting via ``dict(myclass)``"""
+        for k, v in attr.asdict(self).items():
+            yield k, v
+
+    def __getitem__(self, key):
+        """
+        When the instance is accessed like a dict, try returning the matching attribute.
+        If the attribute doesn't exist, or the key is an integer, try and pull it from raw_data
+        """
+        if hasattr(self, key):
+            return getattr(self, key)
+        raise KeyError(key)
+
+    def __setitem__(self, key, value):
+        return setattr(self, key, value)
+
+
+@attr.s
+class Coin(AttribDictable):
     """
     :ivar str symbol:        Unique symbol ID used by implementing application
     :ivar str symbol_id:     Native symbol used on the network where this Coin object is being passed to
@@ -61,34 +98,30 @@ class Coin(DictLike):
         'display_name',
     ]
     
-    symbol: str
-    symbol_id: str
-    coin_type: str
-    our_account: str
-    can_issue: str
-    display_name: str
+    symbol = attr.ib(type=str)
+    symbol_id = attr.ib(type=str)
+    coin_type = attr.ib(default=None, type=str)
+    our_account = attr.ib(default=None, type=str)
+    can_issue = attr.ib(default=False, type=bool)
+    display_name = attr.ib(type=str)
     
-    setting_host: str
-    setting_port: int
-    setting_user: int
-    setting_pass: int
-    setting_json: str
-
-    def __init__(self, *args, **kwargs):
-        base_keys = self.base_keys
-        for k in base_keys:
-            setattr(self, k, kwargs.get(k))
-        self.can_issue = is_true(kwargs.get('can_issue', False))
-        self.setting_json = kwargs.get('setting_json', '{}')
-
-        self.dict_keys = set(list(kwargs.keys()) + base_keys)
-        for k,v in kwargs.items():
-            if not hasattr(self, k):
-                setattr(self, k, v)
-        self.raw_data = kwargs
-
-    def __repr__(self):
-        return str(dict(self))
+    setting_host = attr.ib(default=None, type=str)
+    setting_port = attr.ib(default=None, type=int)
+    
+    setting_user = attr.ib(default=None, type=str)
+    setting_pass = attr.ib(default=None, type=str)
+    setting_json = attr.ib(default='{}', type=str)
+    
+    @symbol_id.default
+    def _default_symbol_id(self):
+        return self.symbol
+    
+    @display_name.default
+    def _default_display_name(self):
+        return self.symbol
+    
+    # def __repr__(self):
+    #     return str(dict(self))
 
     @property
     def settings(self) -> dict:
@@ -113,39 +146,35 @@ class Coin(DictLike):
         )
 
 
-class Deposit(DictLike):
+@attr.s
+class Deposit(AttribDictable):
     """
     Represents a generic Deposit on any coin
     """
 
     dict_keys = {'coin', 'tx_timestamp', 'amount', 'txid', 'vout', 'address', 'memo', 'from_account', 'to_account'}
 
-    address: str
-    from_account: str
-    to_account: str
-    memo: str
-    coin: str
-    tx_timestamp: datetime
-    amount: Decimal
-    txid: str
-    vout: int
-    
-    def __init__(self, coin: str, tx_timestamp: datetime, amount: Decimal, txid=None, vout: int = 0,
-                 address=None, memo=None, from_account=None, to_account=None, **kwargs):
-        for k, v in kwargs.items():
-            if not hasattr(self, k):
-                self.dict_keys.add(k)
-                setattr(self, k, v)
-        self.coin = coin
-        self.tx_timestamp = tx_timestamp
-        if type(amount) is not Decimal:
-            amount = Decimal(amount)
-        self.amount = amount
-        self.txid, self.vout, self.memo = txid, vout, memo
-        self.address, self.from_account, self.to_account = address, from_account, to_account
+    coin = attr.ib(type=str)
+    tx_timestamp = attr.ib(type=datetime, converter=convert_datetime)
+    amount = attr.ib(type=Decimal, converter=Decimal)
+    txid = attr.ib(default=None, type=str)
+    vout = attr.ib(default=0, type=int)
+    address = attr.ib(default=None, type=str)
+    memo = attr.ib(default=None, type=str)
+    from_account = attr.ib(default=None, type=str)
+    to_account = attr.ib(default=None, type=str)
 
-    def __repr__(self):
-        return f"<Deposit coin='{self.coin}' amount='{self.amount}' address='{self.address}'>"
+    # def __init__(self, coin: str, tx_timestamp: datetime, amount: Decimal, txid=None, vout: int = 0,
+    #              address=None, memo=None, from_account=None, to_account=None, **kwargs):
+    #     for k, v in kwargs.items():
+    #         if not hasattr(self, k):
+    #             self.dict_keys.add(k)
+    #             setattr(self, k, v)
+    #     self.coin = coin
+    #     self.tx_timestamp = tx_timestamp
+    #     if type(amount) is not Decimal:
+    #         amount = Decimal(amount)
+    #     self.amount = amount
+    #     self.txid, self.vout, self.memo = txid, vout, memo
+    #     self.address, self.from_account, self.to_account = address, from_account, to_account
 
-    def __str__(self):
-        return self.__repr__()

@@ -146,13 +146,13 @@ class BitcoinManager(BaseManager, BitcoinMixin):
         """
         Get the total amount received by an address, or the balance of the wallet if address not specified.
 
-        :param address:    Crypto address to get balance for, if None, returns whole wallet balance
+        :param address:    Not used.
         :param memo:       NOT USED BY THIS MANAGER
         :param memo_case:  NOT USED BY THIS MANAGER
         :return: Decimal(balance)
         """
 
-        return self.rpc.getreceivedbyaddress(address=address, confirmations=self.setting['confirms_needed'])
+        return self.rpc.getbalance(confirmations=self.setting['confirms_needed'])
 
     def address_valid(self, address) -> bool:
         """If `address` is determined to be valid by the coind RPC, will return True. Otherwise False."""
@@ -216,6 +216,9 @@ class BitcoinManager(BaseManager, BitcoinMixin):
                 raise Exception()
         except:
             raise exceptions.AccountNotFound('Invalid {} address {}'.format(self.symbol, address))
+        balance = self.balance()
+        if balance < amount:
+            raise exceptions.NotEnoughBalance(f'Not enough {self.symbol} balance. Need {amount}, have {balance}')
         # Now let's try to send the coins
         try:
             txid = self.rpc.sendtoaddress(address, '{0:.8f}'.format(amount), "", "", True,

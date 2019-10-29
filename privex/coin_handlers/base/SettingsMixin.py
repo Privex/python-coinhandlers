@@ -19,14 +19,14 @@ import logging
 from typing import Dict, Any
 
 # from django.conf import settings
-
+from privex.coin_handlers.base.BaseHandler import BaseHandler
 from privex.coin_handlers.base.objects import Coin
 from privex.helpers import empty
 
 log = logging.getLogger(__name__)
 
 
-class SettingsMixin:
+class SettingsMixin(BaseHandler):
     """
     SettingsMixin - A mixin that can be used by coin loaders/managers for easy access to database/file settings, with
     handling of default settings

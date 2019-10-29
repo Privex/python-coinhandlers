@@ -1,0 +1,17 @@
+dist: bionic
+language: python
+cache: pip
+
+python:
+  - "3.6"
+  - "3.7"
+  - "3.8"
+  - "3.7-dev"
+  - "3.8-dev"
+  - "nightly"
+install:
+  - pip install -U -r requirements.txt
+  - pip install -U .
+script: pytest --cov=./privex -v
+after_success:
+  - codecov

@@ -19,6 +19,8 @@ Copyright::
 import logging
 from abc import ABC, abstractmethod
 from typing import Generator, Dict, List
+
+from privex.coin_handlers.base.BaseHandler import BaseHandler
 from privex.coin_handlers.base.objects import Coin, Deposit
 
 
@@ -26,7 +28,7 @@ from privex.coin_handlers.base.objects import Coin, Deposit
 # from payments.models import Coin
 
 
-class BaseLoader(ABC):
+class BaseLoader(BaseHandler):
     """
     BaseLoader - Base class for Transaction loaders
 
@@ -74,9 +76,9 @@ class BaseLoader(ABC):
 
         :param List[Coin] symbols: A list of coins that you should be scanning transactions for.
         """
+        super().__init__(settings=settings, coins=coins, **kwargs)
+
         coins = [] if not coins else coins
-        settings = {} if not settings else settings
-        self.allsettings = settings
 
         self.log = logging.getLogger(__name__)
         # List of database symbol IDs (e.g. BTC2, REAL_LTC)
@@ -89,8 +91,8 @@ class BaseLoader(ABC):
         # Coin objects mapped from their database symbol ID (e.g. BTC2, REAL_LTC)
         self.orig_coins = {c.symbol: c for c in coins}  # type: Dict[str, Coin]
         # List of native symbols (BTC, LTC, etc.)
-        self.symbols = self.coins.keys()
-        self.orig_symbols = self.orig_coins.keys()
+        self.symbols = list(self.coins.keys())
+        self.orig_symbols = list(self.orig_coins.keys())
 
         # For your convenience, self.transactions is pre-defined as a list, for loading into by your functions.
         self.transactions = []

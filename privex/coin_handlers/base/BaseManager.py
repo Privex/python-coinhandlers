@@ -4,10 +4,11 @@ from decimal import Decimal
 from typing import Tuple, Union, Dict
 
 from privex.coin_handlers.base import exceptions
+from privex.coin_handlers.base.BaseHandler import BaseHandler
 from privex.coin_handlers.base.objects import Coin
 
 
-class BaseManager(ABC):
+class BaseManager(BaseHandler):
     """
     BaseManager - Base class for coin/token management
 
@@ -43,6 +44,7 @@ class BaseManager(ABC):
     """If this manager supports issuing (creating/printing) tokens/coins, set this to True"""
 
     def __init__(self, settings: Dict[str, dict] = None, coin: Coin = None, *args, **kwargs):
+        super().__init__(settings=settings, coin=coin, **kwargs)
         self.log = logging.getLogger(__name__)
         if not coin:
             raise AttributeError('"coin" must be specified to BaseManager.')
@@ -53,7 +55,6 @@ class BaseManager(ABC):
         self.orig_symbol = self.coin.symbol
         """The original unique database symbol ID"""
 
-        self.allsettings =  {} if not settings else settings
         # super(BaseManager, self).__init__(settings=settings, coin=coin, *args, **kwargs)
 
     def health(self) -> Tuple[str, tuple, tuple]:

@@ -21,13 +21,14 @@ from typing import List, Dict
 # from django.conf import settings
 from privex.jsonrpc import BitcoinRPC
 
+from privex.coin_handlers.base.BaseHandler import BaseHandler
 from privex.coin_handlers.base.objects import Coin
 from privex.helpers import empty
 
 log = logging.getLogger(__name__)
 
 
-class BitcoinMixin:
+class BitcoinMixin(BaseHandler):
     """
     BitcoinMixin - shared code used by both :class:`Bitcoin.BitcoinLoader` and :class:`Bitcoin.BitcoinManager`
 
@@ -96,7 +97,7 @@ class BitcoinMixin:
         settings = self.allsettings
         if 'COIND_RPC' in settings:
             for symbol, conn in settings['COIND_RPC'].items():
-                s[symbol] = conn
+                s[symbol] = dict(conn)
 
         # Finally, fill in any gaps with the default settings, and cast non-string settings to their correct type.
         self._clean_settings(s)

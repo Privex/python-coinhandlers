@@ -60,8 +60,9 @@ setup(
         'golos-python>=1.0.3',
         'python-dateutil',
         'pytz',
+        'attrs',
     ],
-    packages=find_packages(),
+    packages=find_packages(exclude=['tests', 'test.*']),
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
