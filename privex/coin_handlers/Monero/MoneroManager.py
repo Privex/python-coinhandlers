@@ -3,10 +3,11 @@ from time import sleep
 from typing import Union, Dict, List
 
 from privex.helpers import empty, is_true
-from privex.jsonrpc import MoneroRPC
+from privex.jsonrpc import MoneroRPC, RPCException
 from privex.jsonrpc.core import atomic_to_decimal
 
 from privex.coin_handlers.base.objects import Coin
+from privex.coin_handlers.base.exceptions import AccountNotFound, NotEnoughBalance, CoinHandlerException, DeadAPIError
 from privex.coin_handlers.base.BaseManager import BaseManager
 from privex.coin_handlers.Monero.MoneroMixin import MoneroMixin
 
