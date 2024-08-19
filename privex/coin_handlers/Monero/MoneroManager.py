@@ -53,9 +53,68 @@ class MoneroManager(BaseManager, MoneroMixin):
                     total_bal += atomic_to_decimal(a['balance'])
         return total_bal
 
-    def send(self, amount: Decimal, address: str, from_address: str = None, memo: str = None,
+    def send(self, amount: Decimal, address: str, from_address: int = 0, memo: str = None,
              trigger_data: Union[dict, list] = None) -> dict:
-        raise NotImplemented
+        """
+        Send the amount `amount` of XMR to a given address
+        Note that `from_address` should be used as the account index (int) to send from
+        
+        Example - send 0.1 XMR to 4xxxxxxxxxx
+
+            >>> s = MoneroManager()
+            >>> s.send(amount=Decimal('0.1'), address='4xxxxxxxxx', from_address=2)
+
+        :param Decimal amount:      Amount of coins to send, as a Decimal()
+        :param address:             Address to send the coins to
+        :param from_address:        The monero account index to use as an integer
+        :param memo:                NOT USED BY THIS MANAGER
+        :raises AccountNotFound:    The destination `address` isn't valid
+        :raises NotEnoughBalance:   The wallet does not have enough balance to send this amount.
+        :return dict: Result Information
+
+        Format::
+
+          {
+              txid:str - Transaction ID - None if not known,
+              tx_key:str - Transaction Key - None if not known,
+              tx_metadata:str - Transaction metadata - None if not known,
+              tx_blob:str - Transaction blob - None if not known,
+              coin:str - Symbol that was sent,
+              amount:Decimal - The amount that was sent (after fees),
+              fee:Decimal    - TX Fee that was taken from the amount,
+              from:str       - The account/address the coins were sent from,
+              send_type:str       - Should be statically set to "send"
+          }
+
+        """
+        from_address = 0 if from_address is None else int(from_address)
+        v = self.rpc.validate_address(address)
+        if not v.valid:
+            raise AccountNotFound(f"Invalid Monero address '{address}'")
+        try:
+            snd = self.rpc.simple_transfer(
+                amount=amount, address=address, account_index=from_address
+            )
+        except RPCException as e:
+            errs = str(e)
+            if 'WALLET_RPC_ERROR_CODE_WRONG_ADDRESS' in errs.upper():
+                raise AccountNotFound(f"Invalid Monero address '{address}'")
+            if 'not enough money' in errs.lower():
+                raise NotEnoughBalance(f"Failed to send {amount} XMR to {address} - not enough balance!")
+            raise e
+
+        res = dict(
+            txid=snd['tx_hash'],
+            amount=self.rpc.atomic_to_decimal(snd['amount']),
+            fee=self.rpc.atomic_to_decimal(snd['fee']),
+            tx_key=snd.get('tx_key', None),
+            tx_blob=snd.get('tx_blob', None),
+            tx_metadata=snd.get('tx_metadata', None),
+            coin=self.symbol,
+            send_type='send'
+        )
+        res['from'] = from_address
+        return res
 
     def __enter__(self):
         log.debug('%s entering with statement', self.__class__.__name__)
