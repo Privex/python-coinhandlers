@@ -55,12 +55,13 @@ setup(
     license='MIT',
     install_requires=[
         'requests>=2.20.1',
-        'privex-jsonrpc>=1.1.2',
+        'privex-jsonrpc>=1.2.0',
         'privex-helpers>=1.3.3',
         'golos-python>=1.0.3',
         'python-dateutil',
         'pytz',
         'attrs',
+        # 'telospy>=0.1.6',
     ],
     packages=find_packages(exclude=['tests', 'test.*']),
     classifiers=[

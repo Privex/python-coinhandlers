@@ -5,6 +5,7 @@ golos-python>=1.0.3
 python-dateutil
 pytz
 attrs
+telospy>=0.1.6
 
 # Unit testing related
 pytest
