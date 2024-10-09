@@ -90,7 +90,7 @@ class MoneroManager(BaseManager, MoneroMixin):
         """
         from_address = 0 if from_address is None else int(from_address)
         v = self.rpc.validate_address(address)
-        if not v.valid:
+        if not v['valid']:
             raise AccountNotFound(f"Invalid Monero address '{address}'")
         try:
             snd = self.rpc.simple_transfer(
